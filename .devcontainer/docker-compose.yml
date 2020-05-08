@@ -1,0 +1,54 @@
+---
+version: '3'
+services:
+  go-web:
+    build:
+      context: .
+      dockerfile: go.dockerfile
+    command: ["tail -f /dev/null"]
+    environment:
+      - CONFIG_PATH=/workspaces/configs/server.json
+      - PORT=8000
+    volumes:
+      - ~/.ssh/id_rsa:/home/willes/.ssh/id_rsa
+      - ..:/workspaces
+      - ../../vscodeExtensions/extensions:/home/willes/.vscode-server/extensions
+      - ../../vscodeExtensions/insiders:/home/willes/.vscode-server-insiders/extensions
+    ports:
+      - 8100:8000
+      
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181"
+    hostname: zookeeper
+
+  kafka1:
+    image: wurstmeister/kafka
+    command: [start-kafka.sh]
+    ports:
+      - 9092:9092
+    hostname: kafka1
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka1 # docker-machine ip
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_PORT: 9092
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - "zookeeper"
+
+  kafka2:
+    image: wurstmeister/kafka
+    command: [start-kafka.sh]
+    ports:
+      - 9093:9092
+    hostname: kafka2
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka2 # docker-machine ip
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_PORT: 9092
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - "zookeeper"
